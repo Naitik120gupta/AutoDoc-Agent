@@ -1,5 +1,4 @@
-# Autonomous Document Agent — Fluid AI Take-Home
-
+# Autonomous Document Agent 
 ## 1. Setup (2 minutes)
 
 ```bash

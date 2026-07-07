@@ -16,6 +16,13 @@ python3 test_requests.py
 
 This hits `POST /agent` with both required test cases and saves the resulting `.docx` files locally.
 
+Open the browser UI at:
+```bash
+http://127.0.0.1:8000/
+```
+
+The frontend is served directly by FastAPI, so one process powers both the API and the public interface.
+
 Manual test:
 ```bash
 curl -X POST http://127.0.0.1:8000/agent \

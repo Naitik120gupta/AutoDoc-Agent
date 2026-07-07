@@ -1,3 +1,6 @@
 .env
 venv
 output/*.docx
+__pycache__/
+*.pyc
+.pytest_cache/

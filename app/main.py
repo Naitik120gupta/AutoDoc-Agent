@@ -11,21 +11,47 @@ API design notes (say this on camera):
 """
 import os
 import logging
+import base64
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from app.schemas import AgentRequest, AgentResponse, ReflectionResult
+from app.schemas import AgentRequest, AgentResponse
 from app.agent import run_agent
 from app.tools import OUTPUT_DIR
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 
+BASE_DIR = Path(__file__).resolve().parent
+INDEX_FILE = BASE_DIR / "static" / "index.html"
+
 app = FastAPI(
     title="Autonomous Document Agent",
     description="Plans, executes, reflects, and produces a polished .docx from a natural language request.",
     version="1.0.0",
 )
+
+
+def _build_download_data_uri(filepath: str) -> str:
+    with open(filepath, "rb") as file_handle:
+        encoded = base64.b64encode(file_handle.read()).decode("ascii")
+    return (
+        "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;"
+        f"base64,{encoded}"
+    )
+
+
+@app.get("/")
+def serve_frontend():
+    if not INDEX_FILE.exists():
+        raise HTTPException(status_code=500, detail="Frontend not found")
+    return FileResponse(INDEX_FILE)
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 
 @app.post("/agent", response_model=AgentResponse)
@@ -55,7 +81,7 @@ def run_agent_endpoint(payload: AgentRequest):
         reflection=result["reflection"],
         retried=result["retried"],
         document_filename=filename,
-        download_url=f"/agent/download/{filename}",
+        download_url=_build_download_data_uri(result["docx_path"]),
         summary=summary,
     )
 

@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Autonomous Document Agent by Naitik Gupta. Generate polished business documents from a single prompt." />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Autonomous Document Agent</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%230f766e'/%3E%3Cpath d='M18 45V19h8.8c3.7 0 6.5.8 8.6 2.4 2 1.6 3.1 3.9 3.1 6.9 0 2.3-.6 4.2-1.9 5.8-1.2 1.6-2.9 2.7-5 3.3l8.6 7.6H31l-7.2-6.8V45H18zm8.2-12.9c2 0 3.6-.4 4.7-1.2 1.2-.8 1.7-2 1.7-3.7 0-1.5-.5-2.6-1.6-3.4-1-.8-2.6-1.2-4.7-1.2h-3.4v9.5h3.3z' fill='white'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --bg-strong: #dde7f2;
+      --surface: rgba(255, 255, 255, 0.8);
+      --surface-strong: #ffffff;
+      --text: #0f172a;
+      --muted: #566074;
+      --accent: #0f766e;
+      --accent-2: #c2410c;
+      --accent-3: #1d4ed8;
+      --border: rgba(15, 23, 42, 0.1);
+      --shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+      --radius-xl: 30px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 30%),
+        radial-gradient(circle at top right, rgba(194, 65, 12, 0.12), transparent 28%),
+        linear-gradient(180deg, #f8fbfe 0%, var(--bg) 50%, #e7eef7 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 32rem;
+      height: 32rem;
+      border-radius: 50%;
+      filter: blur(20px);
+      opacity: 0.24;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    body::before {
+      top: -10rem;
+      right: -8rem;
+      background: radial-gradient(circle, rgba(29, 78, 216, 0.32), transparent 65%);
+    }
+
+    body::after {
+      left: -10rem;
+      bottom: -12rem;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.36), transparent 65%);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 36px;
+    }
+
+    .topbar {
+      width: min(1240px, calc(100% - 32px));
+      margin: 18px auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 22px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.64);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      width: 2.35rem;
+      height: 2.35rem;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-3));
+      box-shadow: 0 12px 26px rgba(15, 118, 110, 0.28);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-button,
+    .primary-button,
+    .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 0.85rem 1.15rem;
+      font-weight: 700;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .ghost-button {
+      border-color: var(--border);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .primary-button {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), #115e59);
+      box-shadow: 0 16px 36px rgba(15, 118, 110, 0.25);
+    }
+
+    .secondary-button {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.78);
+      border-color: var(--border);
+    }
+
+    .ghost-button:hover,
+    .primary-button:hover,
+    .secondary-button:hover,
+    .sample-chip:hover,
+    .sample-chip:focus-visible,
+    .primary-button:focus-visible,
+    .secondary-button:focus-visible,
+    .ghost-button:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+      outline: none;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-top: 26px;
+    }
+
+    .hero-copy,
+    .panel,
+    .section-card,
+    .output-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 34px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-copy::after {
+      content: "";
+      position: absolute;
+      inset: auto -30px -36px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.16), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 118, 110, 0.15);
+      background: rgba(15, 118, 110, 0.08);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    .brand,
+    .section-title {
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    h1 {
+      margin: 16px 0 14px;
+      font-size: clamp(2.6rem, 5vw, 5rem);
+      line-height: 0.96;
+      letter-spacing: -0.05em;
+      max-width: 12ch;
+    }
+
+    .hero-copy p {
+      margin: 0;
+      max-width: 62ch;
+      font-size: 1.08rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .feature-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.7rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+
+    .panel-text {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.96rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.55rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.12);
+    }
+
+    .compose-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field-label {
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .request-box {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      padding: 16px 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--text);
+      line-height: 1.65;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .request-box:focus {
+      border-color: rgba(15, 118, 110, 0.36);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    }
+
+    .sample-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sample-chip {
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 999px;
+      padding: 0.68rem 0.95rem;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .sample-chip:hover,
+    .sample-chip:focus-visible {
+      border-color: rgba(15, 118, 110, 0.24);
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .helper-copy {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 46ch;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      min-height: 24px;
+    }
+
+    .status-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(15, 118, 110, 0.18);
+      border-top-color: var(--accent);
+      animation: spin 900ms linear infinite;
+      display: none;
+    }
+
+    .status-line.is-loading .status-spinner {
+      display: inline-block;
+    }
+
+    .explainer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .mini-card {
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .mini-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .section-card {
+      margin-top: 22px;
+      padding: 24px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 1.45rem;
+      letter-spacing: -0.03em;
+    }
+
+    .section-subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .output-card {
+      padding: 22px;
+    }
+
+    .output-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      padding: 14px 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    .timeline,
+    .list-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .timeline-item,
+    .stack-item {
+      padding: 16px 16px 17px;
+      border-radius: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .timeline-item .meta,
+    .stack-item .meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--accent);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .timeline-item p,
+    .stack-item p,
+    .summary-copy {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .stack-item ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .stack-item li + li {
+      margin-top: 0.35rem;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #0f172a;
+      color: #e2e8f0;
+      overflow: auto;
+      line-height: 1.6;
+      font-size: 0.88rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .download-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 6px;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.9rem 1.15rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-2), #9a3412);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 16px 32px rgba(194, 65, 12, 0.2);
+    }
+
+    .footer {
+      width: min(1240px, calc(100% - 32px));
+      margin: 22px auto 34px;
+      padding: 18px 24px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(18px);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+    }
+
+    .footer a {
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .error-box {
+      border-color: rgba(194, 65, 12, 0.18);
+      background: rgba(255, 247, 237, 0.9);
+      color: #9a3412;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .hero,
+      .output-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .explainer-grid,
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy,
+      .panel,
+      .section-card,
+      .output-card {
+        border-radius: 24px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .footer {
+        border-radius: 22px;
+      }
+
+      .topbar,
+      .footer,
+      .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .topbar-actions,
+      .hero-actions,
+      .footer-links {
+        width: 100%;
+      }
+
+      .primary-button,
+      .secondary-button,
+      .ghost-button,
+      .download-link,
+      .sample-chip {
+        width: 100%;
+      }
+
+      .hero-copy,
+      .panel,
+      .section-card,
+      .output-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">AD</span>
+      <span>Autonomous Document Agent</span>
+    </div>
+    <div class="topbar-actions">
+      <a class="ghost-button" href="https://github.com/Naitik120gupta/AutoDoc-Agent" target="_blank" rel="noreferrer">GitHub</a>
+      <a class="primary-button" href="#compose">Generate document</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Public document generator</span>
+        <h1>Turn one prompt into a polished document.</h1>
+        <p>
+          This interface drives the backend planner, executor, and reflection loop to produce
+          professional business documents and a downloadable <strong>.docx</strong> file. It is
+          built to feel crisp, trustworthy, and easy to deploy for public use.
+        </p>
+
+        <div class="hero-actions">
+          <a class="primary-button" href="#compose">Write a document</a>
+          <a class="secondary-button" href="#output">See the output flow</a>
+        </div>
+
+        <div class="feature-row">
+          <span class="feature-pill">Schema-constrained planning</span>
+          <span class="feature-pill">Reflection with one bounded retry</span>
+          <span class="feature-pill">Downloads a real .docx artifact</span>
+        </div>
+      </div>
+
+      <aside class="panel" id="compose">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Compose a request</h2>
+            <p class="panel-text">Give the agent a business task, and it will return a plan, assumptions, a reflection result, and a document download link.</p>
+          </div>
+          <div class="status-badge" id="status-badge"><span class="status-dot"></span> Ready</div>
+        </div>
+
+        <form class="compose-form" id="request-form">
+          <label class="field-label" for="request-input">Your request</label>
+          <textarea
+            id="request-input"
+            class="request-box"
+            name="request"
+            placeholder="Example: Create a project plan for launching a mobile banking app for a mid-size retail bank."
+            minlength="3"
+            required
+          ></textarea>
+
+          <div class="sample-row" aria-label="Sample prompts">
+            <button class="sample-chip" type="button" data-sample="Create a project plan for launching a mobile banking app for a mid-size retail bank.">Project plan</button>
+            <button class="sample-chip" type="button" data-sample="Write a business report for our client about our Q3 performance — it needs to be detailed but I don't have the final numbers yet, and the client also asked for it to cover both technical progress and budget in the same document.">Business report</button>
+            <button class="sample-chip" type="button" data-sample="Draft meeting minutes for a sprint planning session with action items, risks, and owners.">Meeting minutes</button>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-button" id="submit-button" type="submit">Generate document</button>
+            <p class="helper-copy">The UI stays on the same page, calls the API asynchronously, and shows the plan and reflection results before linking the generated file.</p>
+          </div>
+
+          <div class="status-line" id="status-line">
+            <span class="status-spinner" aria-hidden="true"></span>
+            <span id="status-text">Waiting for a request.</span>
+          </div>
+        </form>
+
+        <div class="explainer-grid">
+          <div class="mini-card">
+            <strong>1. Plan</strong>
+            <p>The backend turns the prompt into structured steps and assumptions, not free-form text.</p>
+          </div>
+          <div class="mini-card">
+            <strong>2. Execute</strong>
+            <p>Mock data is gathered, sections are drafted, and a clean Word document is produced.</p>
+          </div>
+          <div class="mini-card">
+            <strong>3. Reflect</strong>
+            <p>The draft is reviewed once and patched if there is a concrete gap worth fixing.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section-card" aria-labelledby="output-heading">
+      <h2 class="section-title" id="output-heading">Live output</h2>
+      <p class="section-subtitle">Run a request to see the generated plan, assumptions, reflection notes, and download link appear here.</p>
+
+      <div id="empty-state">
+        <div class="explainer-grid">
+          <div class="mini-card">
+            <strong>Professional presentation</strong>
+            <p>Responsive cards, calm spacing, and a restrained palette keep the interface credible for public use.</p>
+          </div>
+          <div class="mini-card">
+            <strong>Direct downloads</strong>
+            <p>Users get a single action result: a generated document they can preview, download, or hand off.</p>
+          </div>
+          <div class="mini-card">
+            <strong>Deployable as-is</strong>
+            <p>The frontend is served directly from FastAPI, so one app can power both the UI and the API.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="result-root" class="output-grid hidden" aria-live="polite">
+        <div class="output-card">
+          <div class="stats-grid">
+            <div class="stat">
+              <span>Summary</span>
+              <strong id="summary-stat">-</strong>
+            </div>
+            <div class="stat">
+              <span>Retry</span>
+              <strong id="retry-stat">-</strong>
+            </div>
+            <div class="stat">
+              <span>Document</span>
+              <strong id="filename-stat">-</strong>
+            </div>
+          </div>
+
+          <h3>Generated plan</h3>
+          <div class="timeline" id="plan-list"></div>
+
+          <div style="height: 18px"></div>
+
+          <h3>Reflection</h3>
+          <div class="stack-item" id="reflection-card">
+            <div class="meta">
+              <span>Review notes</span>
+              <span class="badge" id="reflection-badge">Pending</span>
+            </div>
+            <p id="reflection-notes">-</p>
+          </div>
+        </div>
+
+        <div class="output-card">
+          <h3>Assumptions made</h3>
+          <div class="list-stack" id="assumptions-list"></div>
+
+          <div style="height: 18px"></div>
+
+          <h3>Download</h3>
+          <div class="download-row">
+            <p class="summary-copy" id="download-copy">Your file link will appear here after the request completes.</p>
+            <a class="download-link hidden" id="download-link" href="#" target="_blank" rel="noreferrer">Download .docx</a>
+          </div>
+
+          <div style="height: 18px"></div>
+
+          <h3>Raw response summary</h3>
+          <pre id="summary-block">Run a request to see the result summary.</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>
+      <strong>Credits:</strong> Made with love by Naitik Gupta -2026.
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/Naitik120gupta/AutoDoc-Agent" target="_blank" rel="noreferrer">Contribute on GitHub</a>
+      <a href="https://www.linkedin.com/in/naitik-gupta/" target="_blank" rel="noreferrer">LinkedIn</a>
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById("request-form");
+    const requestInput = document.getElementById("request-input");
+    const submitButton = document.getElementById("submit-button");
+    const statusBadge = document.getElementById("status-badge");
+    const statusLine = document.getElementById("status-line");
+    const statusText = document.getElementById("status-text");
+    const emptyState = document.getElementById("empty-state");
+    const resultRoot = document.getElementById("result-root");
+    const summaryStat = document.getElementById("summary-stat");
+    const retryStat = document.getElementById("retry-stat");
+    const filenameStat = document.getElementById("filename-stat");
+    const planList = document.getElementById("plan-list");
+    const assumptionsList = document.getElementById("assumptions-list");
+    const reflectionNotes = document.getElementById("reflection-notes");
+    const reflectionBadge = document.getElementById("reflection-badge");
+    const downloadCopy = document.getElementById("download-copy");
+    const downloadLink = document.getElementById("download-link");
+    const summaryBlock = document.getElementById("summary-block");
+
+    const sampleButtons = document.querySelectorAll("[data-sample]");
+
+    const escapeHtml = (value) => String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+    const setLoading = (isLoading, idleMessage = "Waiting for a request.") => {
+      submitButton.disabled = isLoading;
+      statusLine.classList.toggle("is-loading", isLoading);
+      if (isLoading) {
+        statusBadge.classList.remove("error-box");
+        statusBadge.innerHTML = '<span class="status-dot"></span> Working';
+        statusText.textContent = "Planning the document, drafting sections, and running reflection...";
+        return;
+      }
+
+      if (!statusBadge.classList.contains("error-box")) {
+        statusBadge.innerHTML = '<span class="status-dot"></span> Ready';
+        statusText.textContent = idleMessage;
+      }
+    };
+
+    const setError = (message) => {
+      statusLine.classList.remove("is-loading");
+      submitButton.disabled = false;
+      statusBadge.classList.add("error-box");
+      statusBadge.innerHTML = '<span class="status-dot"></span> Error';
+      statusText.textContent = message;
+    };
+
+    const clearError = () => {
+      statusBadge.classList.remove("error-box");
+    };
+
+    const renderPlan = (plan) => {
+      planList.innerHTML = "";
+      plan.forEach((step) => {
+        const item = document.createElement("article");
+        item.className = "timeline-item";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const title = document.createElement("span");
+        title.textContent = `Step ${step.id}`;
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = step.action;
+        meta.append(title, badge);
+
+        const description = document.createElement("p");
+        description.textContent = step.description;
+
+        const inputs = document.createElement("pre");
+        inputs.textContent = JSON.stringify(step.inputs || {}, null, 2);
+
+        item.append(meta, description, inputs);
+        planList.appendChild(item);
+      });
+    };
+
+    const renderAssumptions = (assumptions) => {
+      assumptionsList.innerHTML = "";
+      if (!assumptions.length) {
+        const item = document.createElement("div");
+        item.className = "stack-item";
+        item.innerHTML = '<p>No extra assumptions were needed for this request.</p>';
+        assumptionsList.appendChild(item);
+        return;
+      }
+
+      assumptions.forEach((assumption) => {
+        const item = document.createElement("div");
+        item.className = "stack-item";
+        const paragraph = document.createElement("p");
+        paragraph.textContent = assumption;
+        item.appendChild(paragraph);
+        assumptionsList.appendChild(item);
+      });
+    };
+
+    const renderResult = (data) => {
+      resultRoot.classList.remove("hidden");
+      emptyState.classList.add("hidden");
+
+      summaryStat.textContent = data.summary;
+      retryStat.textContent = data.retried ? "Patched once" : "No retry needed";
+      filenameStat.textContent = data.document_filename;
+
+      renderPlan(data.plan || []);
+      renderAssumptions(data.assumptions_made || []);
+
+      reflectionNotes.textContent = data.reflection?.notes || "No reviewer notes returned.";
+      reflectionBadge.textContent = data.reflection?.needs_retry ? "Retry triggered" : "Approved";
+
+      summaryBlock.textContent = JSON.stringify({
+        request: data.request,
+        summary: data.summary,
+        retried: data.retried,
+        reflection: data.reflection,
+      }, null, 2);
+
+      if (data.download_url) {
+        downloadLink.href = data.download_url;
+        downloadLink.download = data.document_filename || "generated_document.docx";
+        downloadLink.classList.remove("hidden");
+        downloadCopy.textContent = `File ready: ${data.document_filename}`;
+      }
+    };
+
+    sampleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        requestInput.value = button.dataset.sample || "";
+        requestInput.focus();
+      });
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearError();
+      setLoading(true);
+      let requestFailed = false;
+
+      try {
+        const response = await fetch("/agent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ request: requestInput.value.trim() }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.detail || "Request failed");
+        }
+
+        renderResult(payload);
+        statusText.textContent = "Document generated successfully.";
+      } catch (error) {
+        requestFailed = true;
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setError(message);
+        downloadLink.classList.add("hidden");
+        downloadCopy.textContent = "No file was generated because the request failed.";
+        resultRoot.classList.remove("hidden");
+        emptyState.classList.add("hidden");
+        summaryBlock.textContent = message;
+        reflectionNotes.textContent = message;
+        reflectionBadge.textContent = "Error";
+      } finally {
+        if (!requestFailed) {
+          setLoading(false, "Document generated successfully.");
+        }
+      }
+    });
+  </script>
+</body>
+</html>

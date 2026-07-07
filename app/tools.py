@@ -9,13 +9,17 @@ JSON and doesn't need a generic tool-calling protocol on top).
 """
 import os
 import uuid
+import tempfile
 from datetime import datetime
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+OUTPUT_DIR = os.environ.get(
+    "OUTPUT_DIR",
+    os.path.join(tempfile.gettempdir(), "autodoc_agent_output"),
+)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ACCENT_COLOR = RGBColor(0x1F, 0x4E, 0x79)
